@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Editar registro</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <h1>Editar registro</h1>
+
+    <div class="tarjeta">
+
+        <form method="POST" class="formulario">
+
+            <div class="campo">
+
+                <label>Fecha</label>
+
+                <input
+                    type="date"
+                    name="fecha"
+                    value="{{ registro['fecha'] }}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>Frasco</label>
+
+                <input
+                    type="number"
+                    name="frasco"
+                    value="{{ registro['frasco'] }}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>Efectivo</label>
+
+                <input
+                    type="number"
+                    name="efectivo"
+                    value="{{ registro['efectivo'] }}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>Gastos</label>
+
+                <input
+                    type="number"
+                    name="gastos"
+                    value="{{ registro['gastos'] }}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo campo-completo">
+
+                <label>Detalle del gasto</label>
+
+                <input
+                    type="text"
+                    name="detalle"
+                    value="{{ registro['detalle'] or '' }}"
+                >
+
+            </div>
+
+
+            <div class="campo-completo">
+
+                <button
+                    type="submit"
+                    class="boton-guardar"
+                >
+                    Guardar cambios
+                </button>
+
+                <a href="{{ url_for('inicio') }}">
+                    Cancelar
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

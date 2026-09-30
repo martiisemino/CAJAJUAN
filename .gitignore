@@ -1,0 +1,12 @@
+.env
+caja.db
+__pycache__/
+*.pyc
+.venv/
+venv/
+bin/
+obj/
+.vscode/
+*.csproj
+*.sln
+Program.cs

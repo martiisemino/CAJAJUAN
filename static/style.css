@@ -1,0 +1,347 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f6f9;
+    color: #1f2937;
+}
+
+/* CONTENEDOR GENERAL */
+
+.contenedor {
+    width: 92%;
+    max-width: 1250px;
+    margin: 35px auto;
+}
+
+/* ENCABEZADO */
+
+.encabezado {
+    margin-bottom: 30px;
+}
+
+.encabezado h1 {
+    margin: 0;
+    font-size: 32px;
+}
+
+.encabezado p {
+    margin-top: 7px;
+    color: #6b7280;
+}
+
+/* TARJETAS */
+
+.tarjeta {
+    background: white;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+}
+
+.tarjeta h2 {
+    margin-top: 0;
+}
+
+/* RESUMEN */
+
+.resumen {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+}
+
+.resumen-item {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.resumen-item span {
+    display: block;
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.resumen-item strong {
+    font-size: 22px;
+}
+
+.total-neto {
+    background: #ecfdf5;
+}
+
+/* FORMULARIO */
+
+.formulario {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+}
+
+.campo label {
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+
+.campo input {
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 15px;
+    outline: none;
+}
+
+.campo input:focus {
+    border-color: #2563eb;
+}
+
+.campo-completo {
+    grid-column: 1 / -1;
+}
+
+/* BOTONES */
+
+.boton-guardar {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 13px 22px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.boton-guardar:hover {
+    background: #1d4ed8;
+}
+
+.boton-editar {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #111827;
+    padding: 8px 12px;
+    border-radius: 7px;
+    text-decoration: none;
+    margin-right: 5px;
+}
+
+.boton-eliminar {
+    background: #fee2e2;
+    color: #991b1b;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+/* TABLA */
+
+.tabla-contenedor {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    padding: 14px 12px;
+    background: #111827;
+    color: white;
+    font-size: 14px;
+}
+
+td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+tbody tr:hover {
+    background: #f9fafb;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+
+    .resumen {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .formulario {
+        grid-template-columns: 1fr;
+    }
+
+    .campo-completo {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .contenedor {
+        width: 95%;
+        margin-top: 20px;
+    }
+
+    .resumen {
+        grid-template-columns: 1fr;
+    }
+
+    .encabezado h1 {
+        font-size: 26px;
+    }
+}
+/* FILTRO */
+
+.filtro {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.filtro input {
+    padding: 11px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.boton-limpiar {
+    padding: 12px 18px;
+    background: #f3f4f6;
+    color: #111827;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+
+/* FILA SOCIEDAD */
+
+.fila-sociedad {
+    background: #dbeafe;
+    font-weight: bold;
+}
+
+.fila-sociedad:hover {
+    background: #bfdbfe;
+}
+
+.login-contenedor {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-tarjeta {
+    width: 90%;
+    max-width: 400px;
+    background: white;
+    padding: 35px;
+    border-radius: 14px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.10);
+}
+
+.login-tarjeta h1 {
+    margin-top: 0;
+}
+
+.error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.encabezado-superior {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.boton-salir {
+    background: #f3f4f6;
+    color: #111827;
+    padding: 10px 15px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+}
+.boton-imprimir {
+    background: #111827;
+    color: white;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.boton-imprimir:hover {
+    background: #374151;
+}
+
+@media print {
+
+    body {
+        background: white;
+    }
+
+    .contenedor {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+
+    /* Ocultar cosas que no queremos imprimir */
+
+    .encabezado-superior .boton-salir,
+    .filtro,
+    .formulario,
+    .boton-editar,
+    .boton-eliminar,
+    .boton-imprimir {
+        display: none !important;
+    }
+
+    .tarjeta {
+        box-shadow: none;
+        border: none;
+        margin-bottom: 20px;
+        padding: 10px;
+    }
+
+    table {
+        width: 100%;
+    }
+
+    th {
+        background: #ddd !important;
+        color: black !important;
+    }
+
+    /* No imprimir la columna Acciones */
+
+    th:last-child,
+    td:last-child {
+        display: none;
+    }
+}

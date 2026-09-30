@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Control de Caja</title>
+
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="contenedor">
+
+   <div class="encabezado-superior">
+
+    <div>
+        <h1>Control de Caja</h1>
+        <p>Registro y seguimiento de ingresos y gastos</p>
+    </div>
+
+    <a
+        href="{{ url_for('logout') }}"
+        class="boton-salir"
+    >
+        Cerrar sesión
+    </a>
+    <button
+    type="button"
+    class="boton-imprimir"
+    onclick="window.print()"
+>
+    Imprimir movimientos
+</button>
+
+</div>
+
+    <!-- FILTRO -->
+
+    <div class="tarjeta">
+
+        <h2>Período</h2>
+
+        <form method="GET" class="filtro">
+
+            <input
+                type="month"
+                name="mes"
+                value="{{ mes }}"
+            >
+
+            <button
+                type="submit"
+                class="boton-guardar"
+            >
+                Filtrar
+            </button>
+
+            <a
+                href="{{ url_for('inicio') }}"
+                class="boton-limpiar"
+            >
+                Ver todos
+            </a>
+
+        </form>
+
+    </div>
+
+
+    <!-- RESUMEN -->
+
+    <div class="tarjeta">
+
+        <h2>Resumen general</h2>
+
+        <div class="resumen">
+
+            <div class="resumen-item">
+
+                <span>Frasco</span>
+
+                <strong>
+                    ${{ total_frasco|moneda }}
+                </strong>
+
+            </div>
+
+
+            <div class="resumen-item">
+
+                <span>Efectivo</span>
+
+                <strong>
+                    ${{ total_efectivo|moneda }}
+                </strong>
+
+            </div>
+
+
+            <div class="resumen-item">
+
+                <span>Gastos</span>
+
+                <strong>
+                    ${{ total_gastos|moneda }}
+                </strong>
+
+            </div>
+
+
+            <div class="resumen-item">
+
+                <span>Total</span>
+
+                <strong>
+                    ${{ total|moneda }}
+                </strong>
+
+            </div>
+
+
+            <div class="resumen-item total-neto">
+
+                <span>Total neto</span>
+
+                <strong>
+                    ${{ total_neto|moneda }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- NUEVO REGISTRO -->
+
+    <div class="tarjeta">
+
+        <h2>Nuevo movimiento</h2>
+
+        <form
+            method="POST"
+            class="formulario"
+        >
+
+            <div class="campo">
+
+                <label>Fecha</label>
+
+                <input
+                    type="date"
+                    name="fecha"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>Frasco</label>
+
+                <input
+                    type="number"
+                    name="frasco"
+                    min="0"
+                    placeholder="Ej: 2400000"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>Efectivo</label>
+
+                <input
+                    type="number"
+                    name="efectivo"
+                    min="0"
+                    placeholder="Ej: 836000"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>Gastos</label>
+
+                <input
+                    type="number"
+                    name="gastos"
+                    min="0"
+                    value="0"
+                    required
+                >
+
+            </div>
+
+
+            <div class="campo campo-completo">
+
+                <label>
+                    Detalle del gasto
+                </label>
+
+                <input
+                    type="text"
+                    name="detalle"
+                    placeholder="Ej: fusilera"
+                >
+
+            </div>
+
+
+            <div class="campo-completo">
+
+                <button
+                    class="boton-guardar"
+                    type="submit"
+                >
+                    Guardar movimiento
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+
+    <!-- HISTORIAL -->
+
+    <div class="tarjeta">
+
+        <h2>Historial</h2>
+
+        <div class="tabla-contenedor">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Frasco</th>
+                        <th>Efectivo</th>
+                        <th>Gastos</th>
+                        <th>Detalle</th>
+                        <th>Total</th>
+                        <th>Neto</th>
+                        <th>Acciones</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for movimiento in movimientos %}
+
+                    {% set registro = movimiento["registro"] %}
+
+                    <!-- MOVIMIENTO -->
+
+                    <tr>
+
+                        <td>
+                            {{ registro["fecha"] }}
+                        </td>
+
+                        <td>
+                            ${{ registro["frasco"]|moneda }}
+                        </td>
+
+                        <td>
+                            ${{ registro["efectivo"]|moneda }}
+                        </td>
+
+                        <td>
+                            ${{ registro["gastos"]|moneda }}
+                        </td>
+
+                        <td>
+                            {{ registro["detalle"] }}
+                        </td>
+
+                        <td>
+                            ${{
+                                (
+                                    registro["frasco"]
+                                    +
+                                    registro["efectivo"]
+                                )|moneda
+                            }}
+                        </td>
+
+                        <td>
+                            ${{
+                                (
+                                    registro["frasco"]
+                                    +
+                                    registro["efectivo"]
+                                    -
+                                    registro["gastos"]
+                                )|moneda
+                            }}
+                        </td>
+
+                        <td>
+
+                            <a
+                                class="boton-editar"
+                                href="{{ url_for('editar', id=registro['id']) }}"
+                            >
+                                Editar
+                            </a>
+
+
+                            <form
+                                action="{{ url_for('eliminar', id=registro['id']) }}"
+                                method="POST"
+                                style="display:inline;"
+                                onsubmit="return confirm('¿Seguro que querés eliminar este registro?');"
+                            >
+
+                                <button
+                                    class="boton-eliminar"
+                                    type="submit"
+                                >
+                                    Eliminar
+                                </button>
+
+                            </form>
+
+                        </td>
+
+                    </tr>
+
+
+                    <!-- SOCIEDAD ACUMULADA -->
+
+                    <tr class="fila-sociedad">
+
+                        <td>
+                            SOCIEDAD
+                        </td>
+
+                        <td>
+                            ${{ movimiento["sociedad_frasco"]|moneda }}
+                        </td>
+
+                        <td>
+                            ${{ movimiento["sociedad_efectivo"]|moneda }}
+                        </td>
+
+                        <td>
+                            ${{ movimiento["sociedad_gastos"]|moneda }}
+                        </td>
+
+                        <td>
+                            Acumulado
+                        </td>
+
+                        <td>
+                            ${{ movimiento["sociedad_total"]|moneda }}
+                        </td>
+
+                        <td>
+                            ${{ movimiento["sociedad_neto"]|moneda }}
+                        </td>
+
+                        <td>
+                            —
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
