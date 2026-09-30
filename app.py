@@ -1,57 +1,78 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3
-import os
+from pymongo import MongoClient, ASCENDING
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
+from dotenv import load_dotenv
 
+import os
+import hmac
+import re
+
+
+# --------------------------------------------------
+# VARIABLES DE ENTORNO
+# --------------------------------------------------
+
+load_dotenv()
+
+MONGO_URI = os.getenv("MONGO_URI")
+MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "sistemaJuan")
+PASSWORD = os.getenv("APP_PASSWORD")
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+
+if not MONGO_URI:
+    raise RuntimeError("Falta MONGO_URI en el archivo .env")
+
+if not PASSWORD:
+    raise RuntimeError("Falta APP_PASSWORD en el archivo .env")
+
+if not SECRET_KEY:
+    raise RuntimeError("Falta SECRET_KEY en el archivo .env")
+
+
+# --------------------------------------------------
+# FLASK
+# --------------------------------------------------
 
 app = Flask(__name__)
-
-# Clave usada por Flask para manejar la sesión.
-# Más adelante, cuando lo publiquemos, la vamos a cambiar.
-app.secret_key = "clave-secreta-control-caja"
-
-# Contraseña temporal para ingresar al sistema.
-PASSWORD = "1234"
+app.secret_key = SECRET_KEY
 
 
 # --------------------------------------------------
-# BASE DE DATOS
+# MONGODB
 # --------------------------------------------------
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(BASE_DIR, "caja.db")
+cliente_mongo = MongoClient(
+    MONGO_URI,
+    serverSelectionTimeoutMS=5000
+)
 
+db = cliente_mongo[MONGO_DB_NAME]
 
-def conectar_db():
-    conexion = sqlite3.connect(DB)
-    conexion.row_factory = sqlite3.Row
-    return conexion
-
-
-def crear_tabla():
-    conexion = conectar_db()
-
-    conexion.execute("""
-        CREATE TABLE IF NOT EXISTS registros (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            fecha TEXT NOT NULL,
-            frasco INTEGER NOT NULL,
-            efectivo INTEGER NOT NULL,
-            gastos INTEGER NOT NULL,
-            detalle TEXT
-        )
-    """)
-
-    conexion.commit()
-    conexion.close()
+registros_db = db["registros"]
 
 
 # --------------------------------------------------
-# FORMATO DE MONEDA
+# FORMATO MONEDA
 # --------------------------------------------------
 
 @app.template_filter("moneda")
 def moneda(valor):
     return f"{valor:,.0f}".replace(",", ".")
+
+
+# --------------------------------------------------
+# PREPARAR REGISTRO PARA HTML
+# --------------------------------------------------
+
+def preparar_registro(registro):
+
+    registro = dict(registro)
+
+    registro["id"] = str(registro["_id"])
+
+    return registro
 
 
 # --------------------------------------------------
@@ -61,7 +82,6 @@ def moneda(valor):
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
-    # Si ya inició sesión, entra directamente al sistema.
     if session.get("logueado"):
         return redirect(url_for("inicio"))
 
@@ -71,15 +91,13 @@ def login():
 
         password = request.form["password"]
 
-        if password == PASSWORD:
+        if hmac.compare_digest(password, PASSWORD):
 
             session["logueado"] = True
 
             return redirect(url_for("inicio"))
 
-        else:
-
-            error = "Contraseña incorrecta"
+        error = "Contraseña incorrecta"
 
     return render_template(
         "login.html",
@@ -106,13 +124,13 @@ def logout():
 @app.route("/", methods=["GET", "POST"])
 def inicio():
 
-    # Si no inició sesión, no puede entrar.
     if not session.get("logueado"):
         return redirect(url_for("login"))
 
-    # --------------------------------------------------
+
+    # ----------------------------------------------
     # GUARDAR NUEVO MOVIMIENTO
-    # --------------------------------------------------
+    # ----------------------------------------------
 
     if request.method == "POST":
 
@@ -124,103 +142,118 @@ def inicio():
 
         gastos = int(request.form["gastos"])
 
-        detalle = request.form["detalle"]
-
-        conexion = conectar_db()
-
-        conexion.execute("""
-            INSERT INTO registros
-            (
-                fecha,
-                frasco,
-                efectivo,
-                gastos,
-                detalle
-            )
-
-            VALUES (?, ?, ?, ?, ?)
-
-        """, (
-            fecha,
-            frasco,
-            efectivo,
-            gastos,
-            detalle
-        ))
-
-        conexion.commit()
-        conexion.close()
-
-        return redirect(url_for("inicio"))
+        detalle = request.form["detalle"].strip()
 
 
-    # --------------------------------------------------
-    # FILTRAR POR MES
-    # --------------------------------------------------
+        nuevo_registro = {
 
-    mes = request.args.get("mes", "")
+            "fecha": fecha,
 
-    conexion = conectar_db()
+            "frasco": frasco,
+
+            "efectivo": efectivo,
+
+            "gastos": gastos,
+
+            "detalle": detalle
+        }
+
+
+        registros_db.insert_one(
+            nuevo_registro
+        )
+
+
+        return redirect(
+            url_for("inicio")
+        )
+
+
+    # ----------------------------------------------
+    # FILTRO POR MES
+    # ----------------------------------------------
+
+    mes = request.args.get(
+        "mes",
+        ""
+    )
+
+
+    filtro = {}
+
 
     if mes:
 
-        registros = conexion.execute("""
-            SELECT *
-            FROM registros
-
-            WHERE substr(fecha, 1, 7) = ?
-
-            ORDER BY fecha ASC, id ASC
-
-        """, (mes,)).fetchall()
-
-    else:
-
-        registros = conexion.execute("""
-            SELECT *
-            FROM registros
-
-            ORDER BY fecha ASC, id ASC
-
-        """).fetchall()
-
-    conexion.close()
+        filtro["fecha"] = {
+            "$regex": "^" + re.escape(mes)
+        }
 
 
-    # --------------------------------------------------
-    # TOTALES GENERALES
-    # --------------------------------------------------
+    registros_mongo = list(
+
+        registros_db
+        .find(filtro)
+        .sort([
+            ("fecha", ASCENDING),
+            ("_id", ASCENDING)
+        ])
+
+    )
+
+
+    registros = [
+
+        preparar_registro(registro)
+
+        for registro in registros_mongo
+
+    ]
+
+
+    # ----------------------------------------------
+    # TOTALES
+    # ----------------------------------------------
 
     total_frasco = sum(
         registro["frasco"]
         for registro in registros
     )
 
+
     total_efectivo = sum(
         registro["efectivo"]
         for registro in registros
     )
+
 
     total_gastos = sum(
         registro["gastos"]
         for registro in registros
     )
 
-    total = total_frasco + total_efectivo
 
-    total_neto = total - total_gastos
+    total = (
+        total_frasco
+        +
+        total_efectivo
+    )
 
 
-    # --------------------------------------------------
+    total_neto = (
+        total
+        -
+        total_gastos
+    )
+
+
+    # ----------------------------------------------
     # SOCIEDAD ACUMULADA
-    # --------------------------------------------------
+    # ----------------------------------------------
 
     movimientos = []
 
     acumulado_frasco = 0
-
     acumulado_efectivo = 0
-
     acumulado_gastos = 0
 
 
@@ -249,7 +282,8 @@ def inicio():
 
         movimientos.append({
 
-            "registro": registro,
+            "registro":
+                registro,
 
             "sociedad_frasco":
                 acumulado_frasco,
@@ -286,46 +320,64 @@ def inicio():
         total_neto=total_neto,
 
         mes=mes
+
     )
 
 
 # --------------------------------------------------
-# ELIMINAR MOVIMIENTO
+# ELIMINAR
 # --------------------------------------------------
 
-@app.route("/eliminar/<int:id>", methods=["POST"])
+@app.route(
+    "/eliminar/<id>",
+    methods=["POST"]
+)
 def eliminar(id):
 
     if not session.get("logueado"):
         return redirect(url_for("login"))
 
-    conexion = conectar_db()
 
-    conexion.execute(
-        """
-        DELETE FROM registros
-        WHERE id = ?
-        """,
-        (id,)
+    try:
+
+        object_id = ObjectId(id)
+
+    except InvalidId:
+
+        return redirect(url_for("inicio"))
+
+
+    registros_db.delete_one({
+        "_id": object_id
+    })
+
+
+    return redirect(
+        url_for("inicio")
     )
 
-    conexion.commit()
-    conexion.close()
-
-    return redirect(url_for("inicio"))
-
 
 # --------------------------------------------------
-# EDITAR MOVIMIENTO
+# EDITAR
 # --------------------------------------------------
 
-@app.route("/editar/<int:id>", methods=["GET", "POST"])
+@app.route(
+    "/editar/<id>",
+    methods=["GET", "POST"]
+)
 def editar(id):
 
     if not session.get("logueado"):
         return redirect(url_for("login"))
 
-    conexion = conectar_db()
+
+    try:
+
+        object_id = ObjectId(id)
+
+    except InvalidId:
+
+        return redirect(url_for("inicio"))
 
 
     # ----------------------------------------------
@@ -336,67 +388,82 @@ def editar(id):
 
         fecha = request.form["fecha"]
 
-        frasco = int(request.form["frasco"])
+        frasco = int(
+            request.form["frasco"]
+        )
 
-        efectivo = int(request.form["efectivo"])
+        efectivo = int(
+            request.form["efectivo"]
+        )
 
-        gastos = int(request.form["gastos"])
+        gastos = int(
+            request.form["gastos"]
+        )
 
-        detalle = request.form["detalle"]
+        detalle = request.form["detalle"].strip()
 
 
-        conexion.execute("""
-            UPDATE registros
+        registros_db.update_one(
 
-            SET
-                fecha = ?,
-                frasco = ?,
-                efectivo = ?,
-                gastos = ?,
-                detalle = ?
+            {
+                "_id": object_id
+            },
 
-            WHERE id = ?
+            {
+                "$set": {
 
-        """, (
-            fecha,
-            frasco,
-            efectivo,
-            gastos,
-            detalle,
-            id
-        ))
+                    "fecha":
+                        fecha,
 
-        conexion.commit()
+                    "frasco":
+                        frasco,
 
-        conexion.close()
+                    "efectivo":
+                        efectivo,
 
-        return redirect(url_for("inicio"))
+                    "gastos":
+                        gastos,
+
+                    "detalle":
+                        detalle
+                }
+            }
+
+        )
+
+
+        return redirect(
+            url_for("inicio")
+        )
 
 
     # ----------------------------------------------
-    # MOSTRAR DATOS ACTUALES
+    # BUSCAR REGISTRO
     # ----------------------------------------------
 
-    registro = conexion.execute(
-        """
-        SELECT *
-        FROM registros
-        WHERE id = ?
-        """,
-        (id,)
-    ).fetchone()
-
-    conexion.close()
+    registro = registros_db.find_one({
+        "_id": object_id
+    })
 
 
-    # Si por alguna razón el registro no existe.
     if registro is None:
-        return redirect(url_for("inicio"))
+
+        return redirect(
+            url_for("inicio")
+        )
+
+
+    registro = preparar_registro(
+        registro
+    )
 
 
     return render_template(
+
         "editar.html",
+
         registro=registro
+
     )
 
 
@@ -406,6 +473,6 @@ def editar(id):
 
 if __name__ == "__main__":
 
-    crear_tabla()
-
-    app.run(debug=True)
+    app.run(
+        debug=True
+    )
